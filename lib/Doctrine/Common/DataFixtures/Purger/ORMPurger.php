@@ -115,6 +115,14 @@ class ORMPurger implements PurgerInterface
         // Get platform parameters
         $platform = $this->em->getConnection()->getDatabasePlatform();
 
+        /**
+         * @todo HACK
+         * Es necesario deshabilitar el chequeo de restricciones de
+         * foreign keys debido a que el orden de la lista de tablas
+         * no es siempre correcto.
+         */
+        $this->em->getConnection()->executeUpdate("SET foreign_key_checks = 0;");
+
         // Drop tables in reverse commit order
         for ($i = count($commitOrder) - 1; $i >= 0; --$i) {
             $class = $commitOrder[$i];
@@ -134,6 +142,11 @@ class ORMPurger implements PurgerInterface
                 $this->em->getConnection()->executeUpdate($platform->getTruncateTableSQL($tbl, true));
             }
         }
+
+        /**
+         * @todo HACK: Volver a habilitar el chequeo de restricciones de foreign keys.
+         */
+        $this->em->getConnection()->executeUpdate("SET foreign_key_checks = 1;");
     }
 
     private function getCommitOrder(EntityManager $em, array $classes)
