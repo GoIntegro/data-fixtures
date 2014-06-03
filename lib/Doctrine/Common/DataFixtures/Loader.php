@@ -76,7 +76,6 @@ class Loader
             throw new \InvalidArgumentException(sprintf('"%s" does not exist', $dir));
         }
 
-        $fixtures = array();
         $includedFiles = array();
 
         $iterator = new \RecursiveIteratorIterator(
@@ -92,19 +91,8 @@ class Loader
             require_once $sourceFile;
             $includedFiles[] = $sourceFile;
         }
-        $declared = get_declared_classes();
 
-        foreach ($declared as $className) {
-            $reflClass = new \ReflectionClass($className);
-            $sourceFile = $reflClass->getFileName();
-
-            if (in_array($sourceFile, $includedFiles) && ! $this->isTransient($className)) {
-                $fixture = new $className;
-                $fixtures[] = $fixture;
-                $this->addFixture($fixture);
-            }
-        }
-        return $fixtures;
+        return $this->loadDeclaredFixtures($includedFiles);
     }
 
     /**
@@ -119,6 +107,31 @@ class Loader
         require_once $sourceFile;
 
         return $this->loadDeclaredFixtures([$sourceFile]);
+    }
+
+    /**
+     * Loads the fixtures in a given list of required source files.
+     *
+     * @param array List of fixture files already required and ready to load.
+     * @return array $fixtures Array of loaded fixture object instances
+     */
+    private function loadDeclaredFixtures(array $includedFiles)
+    {
+        $fixtures = array();
+        $declared = get_declared_classes();
+
+        foreach ($declared as $className) {
+            $reflClass = new \ReflectionClass($className);
+            $sourceFile = $reflClass->getFileName();
+
+            if (in_array($sourceFile, $includedFiles) && ! $this->isTransient($className)) {
+                $fixture = new $className;
+                $fixtures[] = $fixture;
+                $this->addFixture($fixture);
+            }
+        }
+
+        return $fixtures;
     }
 
     /**
